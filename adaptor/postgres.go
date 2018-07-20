@@ -2,9 +2,8 @@ package adaptor
 
 import (
 	"database/sql"
-	"io/ioutil"
 
-	"bitbucket.org/dbmigrate"
+	"bitbucket.org/braindev/dbmigrate"
 )
 
 // PostgresAdaptor is a PostgreSQL DBMigrate adaptor
@@ -49,12 +48,8 @@ func (a *PostgresAdaptor) CreateMigrationsTable() error {
 }
 
 // ApplyMigration applies the specified migration
-func (a *PostgresAdaptor) ApplyMigration(pair dbmigrate.MigrationFilePair) error {
-	b, err := ioutil.ReadFile(pair.ApplyPath)
-	if err != nil {
-		return err
-	}
-	_, err = a.db.Exec(string(b))
+func (a *PostgresAdaptor) ApplyMigration(pair dbmigrate.MigrationPair) error {
+	_, err := a.db.Exec(pair.ApplyBody)
 	if err != nil {
 		return err
 	}
@@ -63,12 +58,8 @@ func (a *PostgresAdaptor) ApplyMigration(pair dbmigrate.MigrationFilePair) error
 }
 
 // RollbackMigration rolls back the specifified migration
-func (a *PostgresAdaptor) RollbackMigration(pair dbmigrate.MigrationFilePair) error {
-	b, err := ioutil.ReadFile(pair.RollbackPath)
-	if err != nil {
-		return err
-	}
-	_, err = a.db.Exec(string(b))
+func (a *PostgresAdaptor) RollbackMigration(pair dbmigrate.MigrationPair) error {
+	_, err := a.db.Exec(pair.RollbackBody)
 	if err != nil {
 		return err
 	}

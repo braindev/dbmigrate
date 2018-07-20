@@ -1,16 +1,8 @@
 package dbmigrate
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
 	"sort"
-)
-
-var (
-	migratationFileNameRe = regexp.MustCompile(`^(\d+)[\-_]([\w\-]+)[\-_](apply|rollback)\.sql$`)
 )
 
 // VendorAdaptor is the set of functionality needed to implement a compatibility with a database
@@ -18,43 +10,55 @@ var (
 type VendorAdaptor interface {
 	CreateMigrationsTable() error
 	GetAppliedMigrationsOrderedAsc() ([]string, error)
-	ApplyMigration(pair MigrationFilePair) error
-	RollbackMigration(pair MigrationFilePair) error
+	ApplyMigration(pair MigrationPair) error
+	RollbackMigration(pair MigrationPair) error
 }
 
-// MigrationFilePair stores the a pair of apply/rollback migrations
-type MigrationFilePair struct {
-	ApplyPath    string
-	RollbackPath string
+// Storage ..
+type Storage interface {
+	GetMigrationPairs() ([]MigrationPair, error)
+}
+
+// MigrationPair stores the a pair of apply/rollback migrations
+type MigrationPair struct {
 	Version      string
 	Name         string
+	ApplyBody    string
+	RollbackBody string
 }
-
-type migrationFilePairs []MigrationFilePair
-
-func (a migrationFilePairs) Len() int           { return len(a) }
-func (a migrationFilePairs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a migrationFilePairs) Less(i, j int) bool { return a[i].Version < a[j].Version }
 
 // DBMigrate stores all the configuration needed to run migrations
 type DBMigrate struct {
-	migrationsDirectory  string
-	sortedMigrationFiles []MigrationFilePair
-	migrationFiles       map[string]MigrationFilePair
+	sortedMigrationPairs []MigrationPair
+	migrationPairs       map[string]MigrationPair
 	allVersions          []string
 	adaptor              VendorAdaptor
+	storage              Storage
 	verbose              bool // TODO
 }
 
-// New returns an initialized DBMigrate instance.  The migrations directory
-// will be scanned and verified.
-func New(adaptor VendorAdaptor, dir string) (*DBMigrate, error) {
+type migrationPairs []MigrationPair
+
+func (a migrationPairs) Len() int           { return len(a) }
+func (a migrationPairs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a migrationPairs) Less(i, j int) bool { return a[i].Version < a[j].Version }
+
+// New returns an initialized DBMigrate instance.
+func New(adaptor VendorAdaptor, storage Storage) (*DBMigrate, error) {
 	dbMigrate := DBMigrate{
-		adaptor:             adaptor,
-		migrationsDirectory: dir,
+		adaptor: adaptor,
+		storage: storage,
 	}
-	if err := dbMigrate.initialize(); err != nil {
+	if migrationPairs, err := storage.GetMigrationPairs(); err == nil {
+		dbMigrate.sortedMigrationPairs = migrationPairs
+	} else {
 		return nil, err
+	}
+	sort.Sort(migrationPairs(dbMigrate.sortedMigrationPairs))
+
+	dbMigrate.migrationPairs = map[string]MigrationPair{}
+	for _, m := range dbMigrate.sortedMigrationPairs {
+		dbMigrate.migrationPairs[m.Version] = m
 	}
 
 	return &dbMigrate, nil
@@ -80,15 +84,17 @@ func (dbMigrate *DBMigrate) apply(all bool) error {
 
 	// TODO this could be more efficient
 	versionsToApply := []string{}
-	for version := range dbMigrate.migrationFiles {
+	for version := range dbMigrate.migrationPairs {
 		if !stringInSlice(version, appliedVersions) {
 			versionsToApply = append(versionsToApply, version)
 		}
 	}
 
+	sort.Sort(sort.StringSlice(versionsToApply))
+
 	for _, version := range versionsToApply {
-		fmt.Println("Applying migration", dbMigrate.migrationFiles[version].ApplyPath)
-		err = dbMigrate.adaptor.ApplyMigration(dbMigrate.migrationFiles[version])
+		fmt.Println("Applying migration", dbMigrate.migrationPairs[version].Name)
+		err = dbMigrate.adaptor.ApplyMigration(dbMigrate.migrationPairs[version])
 		if err != nil {
 			return err
 		}
@@ -106,69 +112,16 @@ func (dbMigrate *DBMigrate) RollbackLatest() error {
 	if err != nil {
 		return err
 	}
-	for i := len(dbMigrate.sortedMigrationFiles) - 1; i >= 0; i-- {
-		if stringInSlice(dbMigrate.sortedMigrationFiles[i].Version, appliedVersions) {
-			fmt.Println("rolling back migration", dbMigrate.sortedMigrationFiles[i].RollbackPath)
-			err = dbMigrate.adaptor.RollbackMigration(dbMigrate.sortedMigrationFiles[i])
+	for i := len(dbMigrate.sortedMigrationPairs) - 1; i >= 0; i-- {
+		if stringInSlice(dbMigrate.sortedMigrationPairs[i].Version, appliedVersions) {
+			fmt.Println("rolling back migration", dbMigrate.sortedMigrationPairs[i].Name)
+			err = dbMigrate.adaptor.RollbackMigration(dbMigrate.sortedMigrationPairs[i])
 			if err != nil {
 				return err
 			}
 			return nil
 		}
 	}
-
-	return nil
-}
-
-func (dbMigrate *DBMigrate) initialize() error {
-	dir := dbMigrate.migrationsDirectory
-	if info, err := os.Stat(dir); err != nil {
-		return err
-	} else if !info.IsDir() {
-		return errors.New(dir + " is not a directory")
-	}
-	files, err := filepath.Glob(filepath.Join(dir, "*.sql"))
-	if err != nil {
-		return err
-	}
-	migrations := map[string]MigrationFilePair{}
-	for _, file := range files {
-		matches := migratationFileNameRe.FindStringSubmatch(filepath.Base(file))
-		if len(matches) == 4 {
-			version := matches[1]
-			var pair MigrationFilePair
-			if _, ok := migrations[version]; ok {
-				pair = migrations[version]
-			} else {
-				pair = MigrationFilePair{
-					Version: version,
-					Name:    matches[2],
-				}
-			}
-			if matches[3] == "apply" {
-				pair.ApplyPath = file
-			} else {
-				pair.RollbackPath = file
-			}
-			migrations[version] = pair
-		}
-	}
-
-	migrationFiles := []MigrationFilePair{}
-	for v, m := range migrations {
-		if migrations[v].ApplyPath == "" {
-			return errors.New(`apply migration not found for version ` + v)
-		}
-		if migrations[v].RollbackPath == "" {
-			return errors.New(`rollback migration not found for version ` + v)
-		}
-		migrationFiles = append(migrationFiles, m)
-	}
-
-	sort.Sort(migrationFilePairs(migrationFiles))
-
-	dbMigrate.sortedMigrationFiles = migrationFiles
-	dbMigrate.migrationFiles = migrations
 
 	return nil
 }
