@@ -11,36 +11,36 @@ import (
 )
 
 var (
-	migratationFileNameRe = regexp.MustCompile(`^(\d+)[\-_]([\w\-]+)[\-_](apply|rollback)\.sql$`)
+	migratationFileNameRe = regexp.MustCompile(`^([\d\-_]+)[\-_]([\w\-]+)[\-_](apply|rollback)(\.\w+)?$`)
 )
 
 // FileStorage ...
 type FileStorage struct {
-	directory string
+	directoryPath string
 }
 
 // NewFileStorage creates & return a new FileStore struct
-func NewFileStorage(directory string) *FileStorage {
+func NewFileStorage(path string) *FileStorage {
 	return &FileStorage{
-		directory: directory,
+		directoryPath: path,
 	}
 }
 
 // GetMigrationPairs ...
 func (f *FileStorage) GetMigrationPairs() ([]dbmigrate.MigrationPair, error) {
-	if info, err := os.Stat(f.directory); err != nil {
+	if info, err := os.Stat(f.directoryPath); err != nil {
 		return nil, err
 	} else if !info.IsDir() {
-		return nil, errors.New(f.directory + " is not a directory")
+		return nil, errors.New(f.directoryPath + " is not a directory")
 	}
-	files, err := filepath.Glob(filepath.Join(f.directory, "*.sql"))
+	files, err := filepath.Glob(filepath.Join(f.directoryPath, "*"))
 	if err != nil {
 		return nil, err
 	}
 	migrations := map[string]dbmigrate.MigrationPair{}
 	for _, file := range files {
 		matches := migratationFileNameRe.FindStringSubmatch(filepath.Base(file))
-		if len(matches) == 4 {
+		if len(matches) >= 4 {
 			version := matches[1]
 			var pair dbmigrate.MigrationPair
 			if _, ok := migrations[version]; ok {

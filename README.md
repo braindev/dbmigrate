@@ -17,6 +17,14 @@ To migrate
 db, err := sql.Open("postgres", "postgres://user@localhost/test?sslmode=disable")
 adaptor, err := adaptor.NewPostgres(db)
 storage := storage.NewFileStorage("/path/to/migrations/directory")
+/*
+assume a directory with with the following:
+/path/to/migrations/directory/
+  0001_migration_name_apply.sql
+  0001_migration_name_rollback.sql
+  0002_another_migration_name_apply.sql
+  0002_another_migration_name_rollback.sql
+*/
 m, err := dbmigrate.New(adaptor, storage)
 err = m.ApplyAll()
 # or
