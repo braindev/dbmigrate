@@ -8,7 +8,6 @@ import (
 // VendorAdaptor is the set of functionality needed to implement a compatibility with a database
 // vendor
 type VendorAdaptor interface {
-	CreateMigrationsTable() error
 	GetAppliedMigrationsOrderedAsc() ([]string, error)
 	ApplyMigration(pair MigrationPair) error
 	RollbackMigration(pair MigrationPair) error

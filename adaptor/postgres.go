@@ -12,10 +12,11 @@ type PostgresAdaptor struct {
 }
 
 // NewPostgres creates a new PostgresAdaptor
-func NewPostgres(db *sql.DB) *PostgresAdaptor {
-	return &PostgresAdaptor{
+func NewPostgres(db *sql.DB) (*PostgresAdaptor, error) {
+	a := &PostgresAdaptor{
 		db: db,
 	}
+	return a, a.createMigrationsTable()
 }
 
 // GetAppliedMigrationsOrderedAsc returns an ordered slice of string versions
@@ -39,9 +40,9 @@ func (a *PostgresAdaptor) GetAppliedMigrationsOrderedAsc() ([]string, error) {
 	return versions, nil
 }
 
-// CreateMigrationsTable conditionally creates the migrations table if it
+// createMigrationsTable conditionally creates the migrations table if it
 // doesn't yet exist
-func (a *PostgresAdaptor) CreateMigrationsTable() error {
+func (a *PostgresAdaptor) createMigrationsTable() error {
 	const query = `CREATE TABLE IF NOT EXISTS "dbmigrations"("version" varchar NOT NULL PRIMARY KEY)`
 	_, err := a.db.Exec(query)
 	return err

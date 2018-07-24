@@ -247,7 +247,6 @@ func storageWithMigrations() *testStorage {
 func newTestAdaptor() *testAdaptor {
 	return &testAdaptor{
 		appliedMigrations:         []string{}, // previously applied migrations
-		createdMigtationsTable:    false,
 		appliedMigrationPairs:     []MigrationPair{},
 		rolledbackdMigrationPairs: []MigrationPair{},
 	}
@@ -255,14 +254,8 @@ func newTestAdaptor() *testAdaptor {
 
 type testAdaptor struct {
 	appliedMigrations         []string
-	createdMigtationsTable    bool
 	appliedMigrationPairs     []MigrationPair
 	rolledbackdMigrationPairs []MigrationPair
-}
-
-func (a *testAdaptor) CreateMigrationsTable() error {
-	a.createdMigtationsTable = true
-	return nil
 }
 
 func (a *testAdaptor) GetAppliedMigrationsOrderedAsc() ([]string, error) {
