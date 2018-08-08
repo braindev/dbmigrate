@@ -13,11 +13,11 @@ have versions.  A version is a string is alphanumerically sortable.  In the
 case the file storage each migration file name should match the format
 described by this regex:
 
-```^([\d\-_]+)[\-_]([\w\-]+)[\-_](apply|rollback)(\.\w+)?$```
+```^([\d\-_]+:)[\-_]([\w\-]+)[\-_](apply|rollback)(\.\w+)?$```
 
 The file name consists of
 
-- the version (numbers, "_", and "-" characters)
+- the version (numbers, "_", ":", and "-" characters)
 - a "-" or "_" character
 - a name for the migration (numbers, alpha, "_", and "-" characters)
 - a "-" or "_" character
@@ -34,8 +34,8 @@ Examples of possible file names:
 
 ```
 /path/to/migrations/directory
-  2020-10-01-153535-migration-name-apply
-  2020-10-01-153535-migration-name-rollback
+  2020-10-01-15:35:35-migration-name-apply
+  2020-10-01-15:35:35-migration-name-rollback
 ```
 
 Because the versions are strings and sorted alpha-numerically "1" and "10" come

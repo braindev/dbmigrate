@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	migratationFileNameRe = regexp.MustCompile(`^([\d\-_]+)[\-_]([\w\-]+)[\-_](apply|rollback)(\.\w+)?$`)
+	migratationFileNameRe = regexp.MustCompile(`^([\d\-_:]+)[\-_]([\w\-]+)[\-_](apply|rollback)(\.\w+)?$`)
 )
 
 // FileStorage ...
