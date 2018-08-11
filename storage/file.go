@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"bitbucket.org/braindev/dbmigrate"
+	"github.com/braindev/dbmigrate"
 )
 
 var (

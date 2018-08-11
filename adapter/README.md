@@ -3,7 +3,7 @@
 ### Postgres Usage
 
 ```go
-import "bitbucket.org/braindev/dbmigrate/adapter"
+import "github.com/braindev/dbmigrate/adapter"
 
 // NewPostgres(db *sql.DB) (*PostgresAdapter, error)
 pgadapter, err := adapter.NewPostgres(db)
@@ -12,7 +12,7 @@ pgadapter, err := adapter.NewPostgres(db)
 ### MySQL Usage
 
 ```go
-import "bitbucket.org/braindev/dbmigrate/adapter"
+import "github.com/braindev/dbmigrate/adapter"
 
 // NewMySQL(db *sql.DB) (*MySQLAdapter, error)
 mysqladapter, err := adapter.NewMySQL(db)

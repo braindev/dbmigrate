@@ -18,7 +18,7 @@ To rollback one version
 
 ### Installation
 
-```go get -u bitbucket.org/braindev/dbmigrate```
+```go get -u github.com/braindev/dbmigrate```
 
 ### Example Usage
 
@@ -79,6 +79,92 @@ type VendorAdapter interface {
 - [gormigrate](https://github.com/go-gormigrate/gormigrate)
 - [migrate](https://github.com/golang-migrate/migrate)
 - [sql-migrate](https://github.com/rubenv/sql-migrate)
+
+### CLI Example
+
+There's no CLI distributed with dbmigrate current but a simple CLI might look like:
+
+```go
+package main
+
+import (
+	"database/sql"
+	"flag"
+	"fmt"
+	"os"
+
+	"github.com/braindev/dbmigrate"
+	"github.com/braindev/dbmigrate/adapter"
+	"github.com/braindev/dbmigrate/storage"
+
+	_ "github.com/lib/pq"
+)
+
+var (
+	applyOne = flag.Bool("apply-one", false, "apply the next migration not yet applied in alphanumeric order")
+	applyAll = flag.Bool("apply-all", false, "apply all migrations not yet applied in alphanumeric order by version")
+	rollback = flag.Bool("rollback", false, "rollback the last applied migration")
+	dir      = flag.String("directory", "migrations", "the path to the migrations directory")
+	help     = flag.Bool("help", false, "usage information")
+)
+
+func main() {
+	flag.Parse()
+	verifyFlags()
+
+	if *help {
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	db, err := sql.Open("postgres", os.Getenv("DB_URL")) // example DB_URL=postgres://user@localhost/db
+	if err != nil {
+		panic(err)
+	}
+	adapter, err := adapter.NewPostgres(db)
+	if err != nil {
+		panic(err)
+	}
+	storage := storage.NewFileStorage(*dir)
+	m, err := dbmigrate.New(adapter, storage)
+	if err != nil {
+		panic(err)
+	}
+
+	if *applyAll {
+		fmt.Println("Applying migrations")
+		err = m.ApplyAll()
+	} else if *applyOne {
+		fmt.Println("Applying one migration")
+		err = m.ApplyOne()
+	} else if *rollback {
+		err = m.RollbackLatest()
+	}
+
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(-1)
+	}
+}
+
+func verifyFlags() {
+	actionCount := 0
+	if *applyOne {
+		actionCount++
+	}
+	if *applyAll {
+		actionCount++
+	}
+	if *rollback {
+		actionCount++
+	}
+	if actionCount > 1 {
+		fmt.Println("Cannot choose more than one action.  Please choose one of apply-one, apply-all, or rollback")
+		os.Exit(-1)
+	}
+}
+```
+
 
 ### TODO
 

@@ -3,7 +3,7 @@ package adapter
 import (
 	"database/sql"
 
-	"bitbucket.org/braindev/dbmigrate"
+	"github.com/braindev/dbmigrate"
 )
 
 // MySQLAdapter is a PostgreSQL DBMigrate adapter
