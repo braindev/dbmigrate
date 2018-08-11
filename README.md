@@ -4,7 +4,17 @@ A basic database migration library.  Status: ALPHA - API may change
 
 The algorithm used works as follows:
 
-To migrate
+To apply one/all migration(s)
+
+- find all possible migrations
+- find all previously applied migrations
+- apply the next or all the migrations (depending on if one migration is to be applied or all should be applied) in alphanumeric order by migration version that have not been previously applied
+
+To rollback one version
+
+- find all possible migrations
+- find all previously applied migrations
+- find the highest migration version already applied that is in the list of all possible migrations
 
 ### Installation
 
@@ -15,7 +25,7 @@ To migrate
 ```go
 // error handling omitted
 db, err := sql.Open("postgres", "postgres://user@localhost/test?sslmode=disable")
-adaptor, err := adaptor.NewPostgres(db)
+adapter, err := adapter.NewPostgres(db)
 storage := storage.NewFileStorage("/path/to/migrations/directory")
 /*
 assume a directory with with the following:
@@ -25,15 +35,15 @@ assume a directory with with the following:
   0002_another_migration_name_apply.sql
   0002_another_migration_name_rollback.sql
 */
-m, err := dbmigrate.New(adaptor, storage)
+m, err := dbmigrate.New(adapter, storage)
 err = m.ApplyAll()
-# or
+// or
 err = m.ApplyOne()
-# or
+// or
 err = m.RollbackLatest()
 ```
 
-Both migration storage and database adaptors are pluggable.  Their interfaces are simple:
+Both migration storage and database adapters are pluggable.  Their interfaces are simple:
 
 ```go
 type Storage interface {
@@ -41,17 +51,17 @@ type Storage interface {
 }
 ```
 
-[Included Storage Adaptors](./storage/README.md)
+[Included Storage Adapters](./storage/README.md)
 
 ```go
-type VendorAdaptor interface {
+type VendorAdapter interface {
 	GetAppliedMigrationsOrderedAsc() ([]string, error)
 	ApplyMigration(pair MigrationPair) error
 	RollbackMigration(pair MigrationPair) error
 }
 ```
 
-[Included Database Adaptors](./adaptor/README.md)
+[Included Database Adapters](./adapter/README.md)
 
 ### Goals
 
@@ -72,7 +82,7 @@ type VendorAdaptor interface {
 
 ### TODO
 
-- Add more database adaptors?
+- Add more database adapters?
 - Add more storage options?
 - More tests
 - Force migration at a specific version?

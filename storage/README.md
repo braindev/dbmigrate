@@ -1,4 +1,4 @@
-# DB Migrate Storage Adaptors
+# DB Migrate Storage Adapters
 
 ### File Storage
 

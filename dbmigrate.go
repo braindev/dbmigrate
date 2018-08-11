@@ -5,9 +5,9 @@ import (
 	"sort"
 )
 
-// VendorAdaptor is the set of functionality needed to implement a compatibility with a database
+// VendorAdapter is the set of functionality needed to implement a compatibility with a database
 // vendor
-type VendorAdaptor interface {
+type VendorAdapter interface {
 	GetAppliedMigrationsOrderedAsc() ([]string, error)
 	ApplyMigration(pair MigrationPair) error
 	RollbackMigration(pair MigrationPair) error
@@ -18,7 +18,7 @@ type Storage interface {
 	GetMigrationPairs() ([]MigrationPair, error)
 }
 
-// MigrationPair stores the a pair of apply/rollback migrations
+// MigrationPair stores a pair of apply/rollback migrations
 type MigrationPair struct {
 	Version      string
 	Name         string
@@ -31,7 +31,7 @@ type DBMigrate struct {
 	sortedMigrationPairs []MigrationPair
 	migrationPairs       map[string]MigrationPair
 	allVersions          []string
-	adaptor              VendorAdaptor
+	adapter              VendorAdapter
 	storage              Storage
 	verbose              bool // TODO
 }
@@ -43,9 +43,9 @@ func (a migrationPairs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a migrationPairs) Less(i, j int) bool { return a[i].Version < a[j].Version }
 
 // New returns an initialized DBMigrate instance.
-func New(adaptor VendorAdaptor, storage Storage) (*DBMigrate, error) {
+func New(adapter VendorAdapter, storage Storage) (*DBMigrate, error) {
 	dbMigrate := DBMigrate{
-		adaptor: adaptor,
+		adapter: adapter,
 		storage: storage,
 	}
 	if migrationPairs, err := storage.GetMigrationPairs(); err == nil {
@@ -76,7 +76,7 @@ func (dbMigrate *DBMigrate) ApplyOne() error {
 }
 
 func (dbMigrate *DBMigrate) apply(all bool) error {
-	appliedVersions, err := dbMigrate.adaptor.GetAppliedMigrationsOrderedAsc()
+	appliedVersions, err := dbMigrate.adapter.GetAppliedMigrationsOrderedAsc()
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (dbMigrate *DBMigrate) apply(all bool) error {
 
 	for _, version := range versionsToApply {
 		fmt.Println("Applying migration", dbMigrate.migrationPairs[version].Name)
-		err = dbMigrate.adaptor.ApplyMigration(dbMigrate.migrationPairs[version])
+		err = dbMigrate.adapter.ApplyMigration(dbMigrate.migrationPairs[version])
 		if err != nil {
 			return err
 		}
@@ -107,14 +107,14 @@ func (dbMigrate *DBMigrate) apply(all bool) error {
 
 // RollbackLatest rolls back the latest applied migration
 func (dbMigrate *DBMigrate) RollbackLatest() error {
-	appliedVersions, err := dbMigrate.adaptor.GetAppliedMigrationsOrderedAsc()
+	appliedVersions, err := dbMigrate.adapter.GetAppliedMigrationsOrderedAsc()
 	if err != nil {
 		return err
 	}
 	for i := len(dbMigrate.sortedMigrationPairs) - 1; i >= 0; i-- {
 		if stringInSlice(dbMigrate.sortedMigrationPairs[i].Version, appliedVersions) {
 			fmt.Println("rolling back migration", dbMigrate.sortedMigrationPairs[i].Name)
-			err = dbMigrate.adaptor.RollbackMigration(dbMigrate.sortedMigrationPairs[i])
+			err = dbMigrate.adapter.RollbackMigration(dbMigrate.sortedMigrationPairs[i])
 			if err != nil {
 				return err
 			}

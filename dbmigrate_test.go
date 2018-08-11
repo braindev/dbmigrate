@@ -22,8 +22,8 @@ func TestNew(t *testing.T) {
 			},
 		},
 	}
-	adaptor := newTestAdaptor()
-	dbm, err := New(adaptor, storage)
+	adapter := newTestAdapter()
+	dbm, err := New(adapter, storage)
 	if err != nil {
 		t.Error("unexepcted error from New function", err)
 	}
@@ -64,24 +64,24 @@ func TestApplyAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			storage := storageWithMigrations()
-			adaptor := newTestAdaptor()
-			dbm, _ := New(adaptor, storage)
-			adaptor.appliedMigrations = testCase.previousVersions
+			adapter := newTestAdapter()
+			dbm, _ := New(adapter, storage)
+			adapter.appliedMigrations = testCase.previousVersions
 			dbm.ApplyAll()
-			if len(adaptor.appliedMigrationPairs) != len(testCase.expectedApplied) {
+			if len(adapter.appliedMigrationPairs) != len(testCase.expectedApplied) {
 				t.Errorf(
 					"applied %d migrations but expected %d to be applied",
-					len(adaptor.appliedMigrationPairs),
+					len(adapter.appliedMigrationPairs),
 					len(storage.migrationPairs),
 				)
 			}
 			for idx, v := range testCase.expectedApplied {
-				if v != adaptor.appliedMigrationPairs[idx].Version {
+				if v != adapter.appliedMigrationPairs[idx].Version {
 					t.Errorf(
 						"expected version %s applied at index %d but got %s",
 						v,
 						idx,
-						adaptor.appliedMigrationPairs[idx].Version,
+						adapter.appliedMigrationPairs[idx].Version,
 					)
 				}
 			}
@@ -118,24 +118,24 @@ func TestApplyOne(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			storage := storageWithMigrations()
-			adaptor := newTestAdaptor()
-			dbm, _ := New(adaptor, storage)
-			adaptor.appliedMigrations = testCase.previousVersions
+			adapter := newTestAdapter()
+			dbm, _ := New(adapter, storage)
+			adapter.appliedMigrations = testCase.previousVersions
 			dbm.ApplyOne()
-			if len(adaptor.appliedMigrationPairs) != len(testCase.expectedApplied) {
+			if len(adapter.appliedMigrationPairs) != len(testCase.expectedApplied) {
 				t.Errorf(
 					"applied %d migrations but expected %d to be applied",
-					len(adaptor.appliedMigrationPairs),
+					len(adapter.appliedMigrationPairs),
 					len(storage.migrationPairs),
 				)
 			}
 			for idx, v := range testCase.expectedApplied {
-				if v != adaptor.appliedMigrationPairs[idx].Version {
+				if v != adapter.appliedMigrationPairs[idx].Version {
 					t.Errorf(
 						"expected version %s applied at index %d but got %s",
 						v,
 						idx,
-						adaptor.appliedMigrationPairs[idx].Version,
+						adapter.appliedMigrationPairs[idx].Version,
 					)
 				}
 			}
@@ -172,24 +172,24 @@ func TestRollbackLatest(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			storage := storageWithMigrations()
-			adaptor := newTestAdaptor()
-			dbm, _ := New(adaptor, storage)
-			adaptor.appliedMigrations = testCase.previousVersions
+			adapter := newTestAdapter()
+			dbm, _ := New(adapter, storage)
+			adapter.appliedMigrations = testCase.previousVersions
 			dbm.RollbackLatest()
-			if len(adaptor.rolledbackdMigrationPairs) != len(testCase.expectedRolledback) {
+			if len(adapter.rolledbackdMigrationPairs) != len(testCase.expectedRolledback) {
 				t.Errorf(
 					"rolled back %d migrations but expected %d to be rolled back",
-					len(adaptor.appliedMigrationPairs),
+					len(adapter.appliedMigrationPairs),
 					len(storage.migrationPairs),
 				)
 			}
 			for idx, v := range testCase.expectedRolledback {
-				if v != adaptor.rolledbackdMigrationPairs[idx].Version {
+				if v != adapter.rolledbackdMigrationPairs[idx].Version {
 					t.Errorf(
 						"expected version %s rolledback at index %d but got %s",
 						v,
 						idx,
-						adaptor.rolledbackdMigrationPairs[idx].Version,
+						adapter.rolledbackdMigrationPairs[idx].Version,
 					)
 				}
 			}
@@ -244,30 +244,30 @@ func storageWithMigrations() *testStorage {
 	return storage
 }
 
-func newTestAdaptor() *testAdaptor {
-	return &testAdaptor{
+func newTestAdapter() *testAdapter {
+	return &testAdapter{
 		appliedMigrations:         []string{}, // previously applied migrations
 		appliedMigrationPairs:     []MigrationPair{},
 		rolledbackdMigrationPairs: []MigrationPair{},
 	}
 }
 
-type testAdaptor struct {
+type testAdapter struct {
 	appliedMigrations         []string
 	appliedMigrationPairs     []MigrationPair
 	rolledbackdMigrationPairs []MigrationPair
 }
 
-func (a *testAdaptor) GetAppliedMigrationsOrderedAsc() ([]string, error) {
+func (a *testAdapter) GetAppliedMigrationsOrderedAsc() ([]string, error) {
 	return a.appliedMigrations, nil
 }
 
-func (a *testAdaptor) ApplyMigration(pair MigrationPair) error {
+func (a *testAdapter) ApplyMigration(pair MigrationPair) error {
 	a.appliedMigrationPairs = append(a.appliedMigrationPairs, pair)
 	return nil
 }
 
-func (a *testAdaptor) RollbackMigration(pair MigrationPair) error {
+func (a *testAdapter) RollbackMigration(pair MigrationPair) error {
 	a.rolledbackdMigrationPairs = append(a.rolledbackdMigrationPairs, pair)
 	return nil
 }
