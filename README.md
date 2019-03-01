@@ -15,6 +15,7 @@ To rollback one version
 - find all possible migrations
 - find all previously applied migrations
 - find the highest migration version already applied that is in the list of all possible migrations
+- run the rollback of that migration
 
 ### Installation
 
