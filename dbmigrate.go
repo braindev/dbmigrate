@@ -13,7 +13,7 @@ type VendorAdapter interface {
 	RollbackMigration(pair MigrationPair) error
 }
 
-// Storage ..
+// Storage is an interface for where the migrations are stored
 type Storage interface {
 	GetMigrationPairs() ([]MigrationPair, error)
 }

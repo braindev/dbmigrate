@@ -14,7 +14,7 @@ var (
 	migratationFileNameRe = regexp.MustCompile(`^([\d\-_:]+)[\-_]([\w\-]+)[\-_](apply|rollback)(\.\w+)?$`)
 )
 
-// FileStorage ...
+// FileStorage is for storing migrations as files within a directory
 type FileStorage struct {
 	directoryPath string
 }
@@ -26,7 +26,7 @@ func NewFileStorage(path string) *FileStorage {
 	}
 }
 
-// GetMigrationPairs ...
+// GetMigrationPairs implements loading the migrations from files within a directory
 func (f *FileStorage) GetMigrationPairs() ([]dbmigrate.MigrationPair, error) {
 	if info, err := os.Stat(f.directoryPath); err != nil {
 		return nil, err

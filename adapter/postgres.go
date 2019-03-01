@@ -8,7 +8,7 @@ import (
 
 // PostgresAdapter is a PostgreSQL DBMigrate adapter
 type PostgresAdapter struct {
-	db *sql.DB
+	db queryExecutor
 }
 
 // NewPostgres creates a new PostgresAdapter
